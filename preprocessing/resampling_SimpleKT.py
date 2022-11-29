@@ -64,5 +64,33 @@ original_spacing = np.array(a.GetSpacing())
 t1 = sitk.GetArrayFromImage(a)
 
 
+### another one #########
+
+def resample_image(itk_image, out_spacing=(1.0, 1.0, 1.0)):
+    """
+    Resample itk_image to new out_spacing
+    :param itk_image: the input image
+    :param out_spacing: the desired spacing
+    :return: the resampled image
+    """
+    # get original spacing and size
+    original_spacing = itk_image.GetSpacing()
+    original_size = itk_image.GetSize()
+    # calculate new size
+    out_size = [
+        int(np.round(original_size[0] * (original_spacing[0] / out_spacing[0]))),
+        int(np.round(original_size[1] * (original_spacing[1] / out_spacing[1]))),
+        int(np.round(original_size[2] * (original_spacing[2] / out_spacing[2])))
+    ]
+    # instantiate resample filter with properties and execute it
+    resample = sitk.ResampleImageFilter()
+    resample.SetOutputSpacing(out_spacing)
+    resample.SetSize(out_size)
+    resample.SetOutputDirection(itk_image.GetDirection())
+    resample.SetOutputOrigin(itk_image.GetOrigin())
+    resample.SetTransform(sitk.Transform())
+    resample.SetDefaultPixelValue(itk_image.GetPixelIDValue())
+    resample.SetInterpolator(sitk.sitkNearestNeighbor)
+    return resample.Execute(itk_image)
 
 
