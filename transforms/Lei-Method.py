@@ -5,8 +5,8 @@ import numpy as np
 import os 
 import nibabel as nib
 
-SA_img = sitk.ReadImage(r'C:\My_Data\M2M Data\data\train\001\001_SA_ES.nii.gz')
-LA_img = sitk.ReadImage(r'C:\My_Data\M2M Data\data\train\001\001_LA_ES.nii.gz')
+SA_img = sitk.ReadImage(r'C:\My_Data\M2M Data\data\train\001\001_SA_ES.nii.gz')  ### path to SA image 
+LA_img = sitk.ReadImage(r'C:\My_Data\M2M Data\data\train\001\001_LA_ES.nii.gz')    ## path to LA image 
 
 #LA_img = sitk.GetArrayFromImage(LA_img)
 #SA_img = sitk.GetArrayFromImage(SA_img)
