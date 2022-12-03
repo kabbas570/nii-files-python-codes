@@ -7,8 +7,8 @@ import scipy.ndimage
 
 
     ######### SA <---> LA #########
-modality_SA = nib.load(r'C:\My_Data\M2M Data\data\train\001\001_SA_ES.nii.gz')
-modality_LA = nib.load(r'C:\My_Data\M2M Data\data\train\001\001_LA_ES.nii.gz')
+modality_SA = nib.load(r'C:\My_Data\M2M Data\data\train\001\001_SA_ES.nii.gz')  ### path to SA image 
+modality_LA = nib.load(r'C:\My_Data\M2M Data\data\train\001\001_LA_ES.nii.gz')   ### path to SA image 
 
 aff_SA = modality_SA.affine
 aff_LA = modality_LA.affine
