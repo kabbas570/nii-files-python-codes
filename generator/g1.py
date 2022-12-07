@@ -60,7 +60,7 @@ def resample_image_SA(itk_image):
     original_spacing = itk_image.GetSpacing()
     original_size = itk_image.GetSize()
     
-    out_spacing=(1.0, 1.0, original_spacing[2])
+    out_spacing=(1.25, 1.25, original_spacing[2])
     
     # calculate new size
     out_size = [
@@ -86,7 +86,7 @@ def resample_image_LA(itk_image):
     original_spacing = itk_image.GetSpacing()
     original_size = itk_image.GetSize()
     
-    out_spacing=(1.0, 1.0, original_spacing[2])
+    out_spacing=(1.25, 1.25, original_spacing[2])
     
     # calculate new size
     out_size = [
@@ -106,37 +106,39 @@ def resample_image_LA(itk_image):
     return resample.Execute(itk_image)
     
 def crop_center_3D(img,cropx=256,cropy=256):
-    x,x,y = img.shape
+    z,x,y = img.shape
     startx = x//2 - cropx//2
     starty = (y)//2 - cropy//2    
-    return img[:,starty:starty+cropy, startx:startx+cropx]
+    return img[:,startx:startx+cropx, starty:starty+cropy]
+
 def Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_):
+    
     if org_dim1<DIM_ and org_dim2<DIM_:
         padding1=int((DIM_-org_dim1)//2)
         padding2=int((DIM_-org_dim2)//2)
         temp=np.zeros([org_dim3,DIM_,DIM_])
         temp[:,padding1:org_dim1+padding1,padding2:org_dim2+padding2] = img_[:,:,:]
-        img_=temp
+        img_ = temp
     if org_dim1>DIM_ and org_dim2>DIM_:
         img_ = crop_center_3D(img_)        
         ## two dims are different ####
     if org_dim1<DIM_ and org_dim2>=DIM_:
-            padding1=int((DIM_-org_dim1)//2)
-            temp=np.zeros([org_dim3,DIM_,org_dim2])
-            temp[:,padding1:org_dim1+padding1,:] = img_[:,:,:]
-            img_=temp
-            img_ = crop_center_3D(img_)
+        padding1=int((DIM_-org_dim1)//2)
+        temp=np.zeros([org_dim3,DIM_,org_dim2])
+        temp[:,padding1:org_dim1+padding1,:] = img_[:,:,:]
+        img_=temp
+        img_ = crop_center_3D(img_)
     if org_dim1==DIM_ and org_dim2<DIM_:
-            padding2=int((DIM_-org_dim2)//2)
-            temp=np.zeros([org_dim3,DIM_,DIM_])
-            temp[:,:,padding2:org_dim2+padding2] = img_[:,:,:]
-            img_=temp
+        padding2=int((DIM_-org_dim2)//2)
+        temp=np.zeros([org_dim3,DIM_,DIM_])
+        temp[:,:,padding2:org_dim2+padding2] = img_[:,:,:]
+        img_=temp
     
     if org_dim1>DIM_ and org_dim2<DIM_:
-            padding2=int((DIM_-org_dim2)//2)
-            temp=np.zeros([org_dim3,org_dim1,DIM_])
-            temp[:,:,padding2:org_dim2+padding2] = img_[:,:,:]
-            img_ = crop_center_3D(temp)   
+        padding2=int((DIM_-org_dim2)//2)
+        temp=np.zeros([org_dim3,org_dim1,DIM_])
+        temp[:,:,padding2:org_dim2+padding2] = img_[:,:,:]
+        img_ = crop_center_3D(temp)   
     return img_
 
 
@@ -146,7 +148,9 @@ def Normalization_1(img):
         img=(img-mean)/std
         return img 
     
-
+def Normalization_2(x):
+    return np.array((x - np.min(x)) / (np.max(x) - np.min(x)))
+    
 class Dataset_Both_ES(Dataset): 
     def __init__(self, df, images_folder):
         self.df = df
@@ -178,6 +182,7 @@ class Dataset_Both_ES(Dataset):
         
         img_SA = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_SA)
         img_SA = Normalization_1(img_SA)
+        img_SA = Normalization_2(img_SA)
         img_SA = np.expand_dims(img_SA, axis=0)
         
         img_SA_gt = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_SA_gt)  
@@ -207,6 +212,7 @@ class Dataset_Both_ES(Dataset):
         
         img_LA = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_LA)
         img_LA = Normalization_1(img_LA)
+        img_LA = Normalization_2(img_LA)
         
         img_LA_gt = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_LA_gt)  
         
@@ -237,12 +243,115 @@ class Dataset_Both_ES(Dataset):
         new_SA_img = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,new_SA_img)
         
         new_SA_img = Normalization_1(new_SA_img)
+        new_SA_img = Normalization_2(new_SA_img)
         new_SA_img = np.expand_dims(new_SA_img, axis=0)
 
         return img_LA,temp_LA[:,0,:,:],img_SA,temp_SA,new_SA_img,self.images_name[index]
            
 def Data_Loader_Both_ES(df,images_folder,batch_size,num_workers=NUM_WORKERS,pin_memory=PIN_MEMORY):
     test_ids = Dataset_Both_ES(df=df ,images_folder=images_folder)
+    data_loader = DataLoader(test_ids,batch_size=batch_size,num_workers=num_workers,pin_memory=pin_memory,shuffle=True)
+    return data_loader
+
+class Dataset_Both_ED(Dataset): 
+    def __init__(self, df, images_folder):
+        self.df = df
+        self.images_folder = images_folder
+        self.vendors = df['VENDOR']
+        self.scanners = df['SCANNER']
+        self.diseases=df['DISEASE']
+        self.fields=df['FIELD']        
+        self.images_name = df['SUBJECT_CODE'] 
+    def __len__(self):
+        return self.vendors.shape[0]
+    def __getitem__(self, index):
+        img_path = os.path.join(self.images_folder, str(self.images_name[index]).zfill(3),str(self.images_name[index]).zfill(3))
+        
+        img_SA_path = img_path+'_SA_ED.nii.gz'
+        img_SA = sitk.ReadImage(img_SA_path)    ## --> [H,W,C]
+        img_SA = resample_image_SA(img_SA )      ## --> [H,W,C]
+        img_SA = sitk.GetArrayFromImage(img_SA)   ## --> [C,H,W]
+        
+        
+        img_SA_gt_path = img_path+'_SA_ED_gt.nii.gz'
+        img_SA_gt = sitk.ReadImage(img_SA_gt_path)
+        img_SA_gt = resample_image_SA(img_SA_gt)
+        img_SA_gt = sitk.GetArrayFromImage(img_SA_gt)   ## --> [C,H,W]
+        
+        org_dim3 = img_SA.shape[0]
+        org_dim1 = img_SA.shape[1]
+        org_dim2 = img_SA.shape[2] 
+        
+        img_SA = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_SA)
+        img_SA = Normalization_1(img_SA)
+        img_SA = Normalization_2(img_SA)
+        img_SA = np.expand_dims(img_SA, axis=0)
+        
+        img_SA_gt = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_SA_gt)  
+        
+        
+        temp_SA=np.zeros([3,org_dim3,DIM_,DIM_])
+        temp_SA[0,:,:,:][np.where(img_SA_gt==1)]=1
+        temp_SA[1,:,:,:][np.where(img_SA_gt==2)]=1
+        temp_SA[2,:,:,:][np.where(img_SA_gt==3)]=1
+   
+        #####    LA Images #####
+        img_path = os.path.join(self.images_folder, str(self.images_name[index]).zfill(3),str(self.images_name[index]).zfill(3))
+        img_LA_path=img_path+'_LA_ED.nii.gz'
+        img_LA = sitk.ReadImage(img_LA_path)
+        img_LA = resample_image_LA(img_LA)
+        img_LA = sitk.GetArrayFromImage(img_LA)
+        
+        
+        img_LA_gt_path = img_path+'_LA_ED_gt.nii.gz'
+        img_LA_gt = sitk.ReadImage(img_LA_gt_path)
+        img_LA_gt = resample_image_LA(img_LA_gt)
+        img_LA_gt = sitk.GetArrayFromImage(img_LA_gt)
+        
+        org_dim3 = img_LA.shape[0]
+        org_dim1 = img_LA.shape[1]
+        org_dim2 = img_LA.shape[2] 
+        
+        img_LA = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_LA)
+        img_LA = Normalization_1(img_LA)
+        img_LA = Normalization_2(img_LA)
+        
+        img_LA_gt = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_LA_gt)  
+        
+        
+        temp_LA = np.zeros([3,org_dim3,DIM_,DIM_])
+        temp_LA[0,:,:,:][np.where(img_LA_gt==1)]=1
+        temp_LA[1,:,:,:][np.where(img_LA_gt==2)]=1
+        temp_LA[2,:,:,:][np.where(img_LA_gt==3)]=1
+        
+        ### sa_to_la mapping ####
+        
+        img_path_SA = os.path.join(self.images_folder, str(self.images_name[index]).zfill(3),str(self.images_name[index]).zfill(3))
+        img_SA_path = img_path_SA +'_SA_ED.nii.gz'
+        img_SA_1 = sitk.ReadImage(img_SA_path)
+        img_path_LA = os.path.join(self.images_folder, str(self.images_name[index]).zfill(3),str(self.images_name[index]).zfill(3))
+        img_LA_path = img_path_LA +'_LA_ED.nii.gz'
+        img_LA_1 = sitk.ReadImage(img_LA_path)
+        
+        new_SA_img = LA_to_SA(img_SA_1,img_LA_1)
+        new_SA_img = resample_image_SA(new_SA_img)
+        new_SA_img = sitk.GetArrayFromImage(new_SA_img)
+        
+
+        org_dim3 = new_SA_img.shape[0]
+        org_dim1 = new_SA_img.shape[1]
+        org_dim2 = new_SA_img.shape[2] 
+
+        new_SA_img = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,new_SA_img)
+        
+        new_SA_img = Normalization_1(new_SA_img)
+        new_SA_img = Normalization_2(new_SA_img)
+        new_SA_img = np.expand_dims(new_SA_img, axis=0)
+
+        return img_LA,temp_LA[:,0,:,:],img_SA,temp_SA,new_SA_img,self.images_name[index]
+           
+def Data_Loader_Both_ED(df,images_folder,batch_size,num_workers=NUM_WORKERS,pin_memory=PIN_MEMORY):
+    test_ids = Dataset_Both_ED(df=df ,images_folder=images_folder)
     data_loader = DataLoader(test_ids,batch_size=batch_size,num_workers=num_workers,pin_memory=pin_memory,shuffle=True)
     return data_loader
 
