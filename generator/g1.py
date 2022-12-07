@@ -150,6 +150,34 @@ def Normalization_1(img):
     
 def Normalization_2(x):
     return np.array((x - np.min(x)) / (np.max(x) - np.min(x)))
+
+def generate_label_1(gt,org_dim3):
+        temp_ = np.zeros([3,org_dim3,DIM_,DIM_])
+        temp_[0,:,:,:][np.where(gt==1)]=1
+        temp_[1,:,:,:][np.where(gt==2)]=1
+        temp_[2,:,:,:][np.where(gt==3)]=1
+        return temp_
+        
+def generate_label_2(gt,org_dim3):
+    
+        temp_ = np.zeros([6,org_dim3,DIM_,DIM_])
+    
+        temp_[0,:,:,:][np.where(gt==1)]=1
+        temp_[1,:,:,:][np.where(gt==2)]=1
+        temp_[1,:,:,:][np.where(gt==3)]=1
+        
+        temp_[2,:,:,:][np.where(gt==2)]=1
+        temp_[3,:,:,:][np.where(gt==1)]=1
+        temp_[3,:,:,:][np.where(gt==3)]=1
+        
+        temp_[4,:,:,:][np.where(gt==3)]=1
+        temp_[5,:,:,:][np.where(gt==2)]=1
+        temp_[5,:,:,:][np.where(gt==1)]=1
+    
+        return temp_
+        
+     
+    
     
 class Dataset_Both_ES(Dataset): 
     def __init__(self, df, images_folder):
@@ -187,11 +215,9 @@ class Dataset_Both_ES(Dataset):
         
         img_SA_gt = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_SA_gt)  
         
+        #temp_SA = generate_label_1(img_SA_gt,org_dim3)
+        temp_SA = generate_label_2(img_SA_gt,org_dim3)
         
-        temp_SA=np.zeros([3,org_dim3,DIM_,DIM_])
-        temp_SA[0,:,:,:][np.where(img_SA_gt==1)]=1
-        temp_SA[1,:,:,:][np.where(img_SA_gt==2)]=1
-        temp_SA[2,:,:,:][np.where(img_SA_gt==3)]=1
    
         #####    LA Images #####
         img_path = os.path.join(self.images_folder, str(self.images_name[index]).zfill(3),str(self.images_name[index]).zfill(3))
@@ -216,11 +242,8 @@ class Dataset_Both_ES(Dataset):
         
         img_LA_gt = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_LA_gt)  
         
-        
-        temp_LA = np.zeros([3,org_dim3,DIM_,DIM_])
-        temp_LA[0,:,:,:][np.where(img_LA_gt==1)]=1
-        temp_LA[1,:,:,:][np.where(img_LA_gt==2)]=1
-        temp_LA[2,:,:,:][np.where(img_LA_gt==3)]=1
+        #temp_LA = generate_label_1(img_LA_gt,org_dim3)
+        temp_LA = generate_label_2(img_LA_gt,org_dim3)
         
         ### sa_to_la mapping ####
         
@@ -289,11 +312,8 @@ class Dataset_Both_ED(Dataset):
         
         img_SA_gt = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_SA_gt)  
         
-        
-        temp_SA=np.zeros([3,org_dim3,DIM_,DIM_])
-        temp_SA[0,:,:,:][np.where(img_SA_gt==1)]=1
-        temp_SA[1,:,:,:][np.where(img_SA_gt==2)]=1
-        temp_SA[2,:,:,:][np.where(img_SA_gt==3)]=1
+       # temp_SA = generate_label_1(img_SA_gt,org_dim3)
+        temp_SA = generate_label_2(img_SA_gt,org_dim3)
    
         #####    LA Images #####
         img_path = os.path.join(self.images_folder, str(self.images_name[index]).zfill(3),str(self.images_name[index]).zfill(3))
@@ -318,12 +338,9 @@ class Dataset_Both_ED(Dataset):
         
         img_LA_gt = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_LA_gt)  
         
-        
-        temp_LA = np.zeros([3,org_dim3,DIM_,DIM_])
-        temp_LA[0,:,:,:][np.where(img_LA_gt==1)]=1
-        temp_LA[1,:,:,:][np.where(img_LA_gt==2)]=1
-        temp_LA[2,:,:,:][np.where(img_LA_gt==3)]=1
-        
+        #temp_LA = generate_label_1(img_LA_gt,org_dim3)
+        temp_LA = generate_label_2(img_LA_gt,org_dim3)
+
         ### sa_to_la mapping ####
         
         img_path_SA = os.path.join(self.images_folder, str(self.images_name[index]).zfill(3),str(self.images_name[index]).zfill(3))
@@ -356,25 +373,33 @@ def Data_Loader_Both_ED(df,images_folder,batch_size,num_workers=NUM_WORKERS,pin_
     return data_loader
 
 
-train_imgs = r'C:\My_Data\M2M Data\data\data_2\train' 
-train_csv_path = r'C:\My_Data\M2M Data\data\train.csv' 
-df_train = pd.read_csv(train_csv_path)
-train_loader_ES = Data_Loader_Both_ES(df_train,train_imgs,batch_size = 1)
-a = iter(train_loader_ES)
-a1 = next(a)
+# train_imgs = r'C:\My_Data\M2M Data\data\data_2\train' 
+# train_csv_path = r'C:\My_Data\M2M Data\data\train.csv' 
+# df_train = pd.read_csv(train_csv_path)
+# train_loader_ES = Data_Loader_Both_ED(df_train,train_imgs,batch_size = 1)
+# a = iter(train_loader_ES)
+# a1 = next(a)
 
 # for i in range(6):
-#     gt =  a1[4][0,0,:,:,:]
+#     gt =  a1[3][0,i,7,:,:]
 #     label = a1[5].numpy()
 #     plt.figure()
-#     plt.imshow(gt[i,:,:])
+#     plt.imshow(gt[:,:])
 
-# SA_img = sitk.ReadImage(r'C:\My_Data\M2M Data\data\train\084\084_LA_ES_gt.nii.gz')
-# SA_img = resample_image_LA(SA_img)
-# t1 = sitk.GetArrayFromImage(SA_img)
+# img_SA_gt = sitk.ReadImage(r'C:\My_Data\M2M Data\data\train\013\013_SA_ES_gt.nii.gz')
+
+# img_SA_gt = resample_image_SA(img_SA_gt)
+# img_SA_gt = sitk.GetArrayFromImage(img_SA_gt)   ## --> [C,H,W]
+
+# org_dim3 = img_SA_gt.shape[0]
+# org_dim1 = img_SA_gt.shape[1]
+# org_dim2 = img_SA_gt.shape[2] 
+
+# img_SA_gt = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_SA_gt)  
+
 
 # plt.figure()
-# plt.imshow(t1[0,:,:])
+# plt.imshow(img_SA_gt[8,:,:])
 
 # org_dim3 = t1.shape[0]
 # org_dim1 = t1.shape[1]
