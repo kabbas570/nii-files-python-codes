@@ -176,11 +176,10 @@ def generate_label_2(gt,org_dim3):
     
         return temp_
         
- def same_depth(img):
-    temp = np.ones([img.shape[0],img.shape[1],17,256,256])
-    diff = 17-img.shape[2]
-    temp[:,:,0:17-diff,:,:] = img
-    return temp    
+def same_depth(img):
+    temp = np.zeros([img.shape[0],17,256,256])
+    temp[:,0:img.shape[1],:,:] = img
+    return temp      
     
     
 class Dataset_Both_ES(Dataset): 
@@ -216,6 +215,9 @@ class Dataset_Both_ES(Dataset):
         img_SA = Normalization_1(img_SA)
         img_SA = Normalization_2(img_SA)
         img_SA = np.expand_dims(img_SA, axis=0)
+                
+        img_SA = same_depth(img_SA)
+        
         
         img_SA_gt = Cropping_3d(org_dim3,org_dim1,org_dim2,DIM_,img_SA_gt)  
         
@@ -377,15 +379,15 @@ def Data_Loader_Both_ED(df,images_folder,batch_size,num_workers=NUM_WORKERS,pin_
     return data_loader
 
 
-# train_imgs = r'C:\My_Data\M2M Data\data\data_2\train' 
-# train_csv_path = r'C:\My_Data\M2M Data\data\train.csv' 
-# df_train = pd.read_csv(train_csv_path)
-# train_loader_ES = Data_Loader_Both_ED(df_train,train_imgs,batch_size = 1)
-# a = iter(train_loader_ES)
-# a1 = next(a)
+train_imgs = r'C:\My_Data\M2M Data\data\data_2\train' 
+train_csv_path = r'C:\My_Data\M2M Data\data\train.csv' 
+df_train = pd.read_csv(train_csv_path)
+train_loader_ES = Data_Loader_Both_ES(df_train,train_imgs,batch_size = 1)
+a = iter(train_loader_ES)
+a1 = next(a)
 
-# for i in range(6):
-#     gt =  a1[3][0,i,7,:,:]
+# for i in range(17):
+#     gt =  a1[2][0,0,i,:,:]
 #     label = a1[5].numpy()
 #     plt.figure()
 #     plt.imshow(gt[:,:])
