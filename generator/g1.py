@@ -176,7 +176,11 @@ def generate_label_2(gt,org_dim3):
     
         return temp_
         
-     
+ def same_depth(img):
+    temp = np.ones([img.shape[0],img.shape[1],17,256,256])
+    diff = 17-img.shape[2]
+    temp[:,:,0:17-diff,:,:] = img
+    return temp    
     
     
 class Dataset_Both_ES(Dataset): 
